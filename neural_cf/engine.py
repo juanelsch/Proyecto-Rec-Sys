@@ -54,19 +54,30 @@ class Engine(object):
         with torch.no_grad():
             test_users, test_items = evaluate_data[0], evaluate_data[1]
             negative_users, negative_items = evaluate_data[2], evaluate_data[3]
+            print(f'negative_users: {len(negative_users)}, negative_items: {len(negative_items)}')
             if self.config['use_cuda'] is True:
                 test_users = test_users.cuda()
                 test_items = test_items.cuda()
                 negative_users = negative_users.cuda()
                 negative_items = negative_items.cuda()
 
-            test_scores = []
-            negative_scores = []
-            bs = self.config['batch_size']
-            for i in range(0, len(test_users), bs):
-                test_scores.append(self.model(test_users, test_items))
-            for i in range(0, len(negative_users), bs):
-                negative_scores.append(self.model(negative_users, negative_items))
+            if self.config['use_batchify']:
+                test_scores = []
+                negative_scores = []
+                bs = self.config['batch_size']
+                for i in range(0, len(test_users), bs):
+                    end_idx = min(i + bs, len(test_users))
+                    batch_users = test_users[i: end_idx]
+                    batch_items = test_items[i: end_idx]
+                    test_scores.append(self.model(batch_users, batch_items))
+                for i in range(0, len(negative_users), bs):
+                    end_idx = min(i + bs, len(negative_users))
+                    batch_users = negative_users[i: end_idx]
+                    batch_items = negative_items[i: end_idx]
+                    negative_scores.append(self.model(batch_users, batch_items))
+            else:
+                test_scores = self.model(test_users, test_items)
+                negative_scores = self.model(negative_users, negative_items)
 
             test_scores = torch.concatenate(test_scores, dim=0)
             negative_scores = torch.concatenate(negative_scores, dim=0)

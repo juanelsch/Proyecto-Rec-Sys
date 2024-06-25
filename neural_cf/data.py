@@ -58,7 +58,8 @@ class SampleGenerator(object):
     def _binarize(self, ratings):
         """binarize into 0 or 1, imlicit feedback"""
         ratings = deepcopy(ratings)
-        ratings['rating'][ratings['rating'] > 0] = 1.0
+        ratings.loc[ratings['rating'] <= 2, 'rating'] = 0
+        ratings.loc[ratings['rating'] > 2, 'rating'] = 1.0
         return ratings
 
     def _split_loo(self, ratings):

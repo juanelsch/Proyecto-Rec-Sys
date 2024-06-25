@@ -5,3 +5,4 @@ py/
 
 # Training runs
 runs/
+checkpoints/
