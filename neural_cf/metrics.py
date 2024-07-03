@@ -55,3 +55,9 @@ class MetronAtK(object):
         test_in_top_k =top_k[top_k['test_item'] == top_k['item']]
         test_in_top_k['ndcg'] = test_in_top_k['rank'].apply(lambda x: math.log(2) / math.log(1 + x)) # the rank starts from 1
         return test_in_top_k['ndcg'].sum() * 1.0 / full['user'].nunique()
+
+    def cal_mrr(self):
+        full = self._subjects
+        test_in_top_k = full[full['test_item'] == full['item']]
+        test_in_top_k['rr'] = 1.0 / test_in_top_k['rank']
+        return test_in_top_k['rr'].sum() * 1.0 / full['user'].nunique()
