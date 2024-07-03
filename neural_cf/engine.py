@@ -15,6 +15,7 @@ class Engine(object):
     def __init__(self, config):
         self.config = config  # model configuration
         self._metron = MetronAtK(top_k=10)
+        self._metron5 = MetronAtK(top_k=5)
         self._writer = SummaryWriter(log_dir='runs/{}'.format(config['alias']))  # tensorboard writer
         self._writer.add_text('config', str(config), 0)
         self.opt = use_optimizer(self.model, config)
@@ -54,7 +55,6 @@ class Engine(object):
         with torch.no_grad():
             test_users, test_items = evaluate_data[0], evaluate_data[1]
             negative_users, negative_items = evaluate_data[2], evaluate_data[3]
-            print(f'negative_users: {len(negative_users)}, negative_items: {len(negative_items)}')
             if self.config['use_cuda'] is True:
                 test_users = test_users.cuda()
                 test_items = test_items.cuda()
@@ -95,11 +95,22 @@ class Engine(object):
                                  negative_users.data.view(-1).tolist(),
                                  negative_items.data.view(-1).tolist(),
                                  negative_scores.data.view(-1).tolist()]
-        hit_ratio, ndcg = self._metron.cal_hit_ratio(), self._metron.cal_ndcg()
-        self._writer.add_scalar('performance/HR', hit_ratio, epoch_id)
-        self._writer.add_scalar('performance/NDCG', ndcg, epoch_id)
-        print('[Evluating Epoch {}] HR = {:.4f}, NDCG = {:.4f}'.format(epoch_id, hit_ratio, ndcg))
-        return hit_ratio, ndcg
+            self._metron5.subjects = [test_users.data.view(-1).tolist(),
+                                 test_items.data.view(-1).tolist(),
+                                 test_scores.data.view(-1).tolist(),
+                                 negative_users.data.view(-1).tolist(),
+                                 negative_items.data.view(-1).tolist(),
+                                 negative_scores.data.view(-1).tolist()]
+        hit_ratio10, ndcg10, mrr10 = self._metron.cal_hit_ratio(), self._metron.cal_ndcg(), self._metron.cal_mrr()
+        hit_ratio5, ndcg5, mrr5 = self._metron5.cal_hit_ratio(), self._metron5.cal_ndcg(), self._metron5.cal_mrr()
+        self._writer.add_scalar('performance/HR10', hit_ratio10, epoch_id)
+        self._writer.add_scalar('performance/NDCG10', ndcg10, epoch_id)
+        self._writer.add_scalar('performance/MRR10', mrr10, epoch_id)
+        self._writer.add_scalar('performance/HR5', hit_ratio5, epoch_id)
+        self._writer.add_scalar('performance/NDCG5', ndcg5, epoch_id)
+        self._writer.add_scalar('performance/MRR5', mrr5, epoch_id)
+        print('[Evaluating Epoch {}] HR@10 = {:.4f}, NDCG@10 = {:.4f}, MRR@10 = {:.4f}, HR@5 = {:.4f}, NDCG@5 = {:.4f}, MRR@5 = {:.4f},'.format(epoch_id, hit_ratio10, ndcg10, mrr10, hit_ratio5, ndcg5, mrr5))
+        return hit_ratio10, ndcg10
 
     def save(self, alias, epoch_id, hit_ratio, ndcg):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
