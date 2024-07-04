@@ -50,6 +50,20 @@ class KANMF(torch.nn.Module):
         logits = self.affine_output(vector)
         rating = self.logistic(logits)
         return rating
+    
+    def init_weight(self):
+        pass
+    
+    def load_pretrain_weights(self):
+        """Weights from GMF model"""
+        config = self.config
+        config['latent_dim'] = config['latent_dim_mf']
+        gmf_model = GMF(config)
+        if config['use_cuda'] is True:
+            gmf_model.cuda()
+        resume_checkpoint(gmf_model, model_dir=config['pretrain_mf'], device_id=config['device_id'])
+        self.embedding_user_mf.weight.data = gmf_model.embedding_user.weight.data
+        self.embedding_item_mf.weight.data = gmf_model.embedding_item.weight.data
 
 class KANMFEngine(Engine):
     def __init__(self, config):
@@ -59,3 +73,6 @@ class KANMFEngine(Engine):
             self.model.cuda()
         super(KANMFEngine, self).__init__(config)
         print(self.model)
+
+        if config['pretrain']:
+            self.model.load_pretrain_weights()

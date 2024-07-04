@@ -4,6 +4,7 @@ from gmf import GMFEngine
 from mlp import MLPEngine
 from kan_ import KANEngine
 from neumf import NeuMFEngine
+from kanmf import KANMFEngine
 from data import SampleGenerator
 
 gmf_config = {'alias': 'gmf_factor8neg4-implict',
@@ -89,6 +90,28 @@ neumf_config = {'alias': 'neumf_factor8neg4',
                 'pretrain_mlp': 'checkpoints/mlp/{}'.format('mlp_factor8neg4_bz256_166432168_pretrain_reg_0.0000001_Epoch100_HR0.6458_NDCG0.3824.model'),
                 'model_dir': 'checkpoints/neumf/{}_Epoch{}_HR{:.4f}_NDCG{:.4f}.model'
                 }
+                
+kanmf_config = {'alias': 'kanmf_factor8neg4',
+                'num_epoch': 200,
+                'batch_size': 1024,
+                'optimizer': 'adam',
+                'adam_lr': 1e-3,
+                'num_users': 944, # if ml-1m then 6040, if ml-100k then 944, if dataset idx starts at 1 then len(data) + 1
+                'num_items': 1683, # if ml-1m then 3706, if ml-100k then 1683, if dataset idx starts at 1 then len(data) + 1
+                'latent_dim_mf': 8,
+                'latent_dim_mlp': 8,
+                'num_negative': 4,
+                'layers': [16, 8],  # layers[0] is the concat of latent user vector & latent item vector, last layer implemented inside
+                'l2_regularization': 0.0000001,
+                'weight_init_gaussian': True,
+                'use_cuda': False,
+                'use_batchify': True,
+                'device_id': 0,
+                'pretrain': True,
+                'pretrain_mf': 'checkpoints/gmf/{}'.format('gmf_factor8neg4-implict_Epoch100_HR0.6564_NDCG0.3904.model'),
+                'pretrain_kan': 'checkpoints/kan/{}'.format('kan_factor8neg4_Epoch20_HR0.4040_NDCG0.2285.model'),
+                'model_dir': 'checkpoints/kanmf/{}_Epoch{}_HR{:.4f}_NDCG{:.4f}.model'
+                }
 """
 # Load Data
 ml1m_dir = 'data/ml-1m/ratings.dat'
@@ -131,8 +154,10 @@ evaluate_data = sample_generator.evaluate_data
 # engine = MLPEngine(config)
 # config = neumf_config
 # engine = NeuMFEngine(config)
-config = kan_config
-engine = KANEngine(config)
+# config = kan_config
+# engine = KANEngine(config)
+config = kanmf_config
+engine = KANMFEngine(config)
 for epoch in range(config['num_epoch']):
     print('Epoch {} starts !'.format(epoch))
     print('-' * 80)
