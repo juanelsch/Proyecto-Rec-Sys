@@ -38,7 +38,8 @@ class Engine(object):
 
     def train_an_epoch(self, train_loader, epoch_id):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
-        self.model.train()
+        # if self.config['alias'] != 'kan_test':
+        #     self.model.train()
         total_loss = 0
         for batch_id, batch in enumerate(train_loader):
             assert isinstance(batch[0], torch.LongTensor)
@@ -51,7 +52,8 @@ class Engine(object):
 
     def evaluate(self, evaluate_data, epoch_id):
         assert hasattr(self, 'model'), 'Please specify the exact model !'
-        self.model.eval()
+        # if self.config['alias'] != 'kan_test':
+        #     self.model.eval()
         with torch.no_grad():
             test_users, test_items = evaluate_data[0], evaluate_data[1]
             negative_users, negative_items = evaluate_data[2], evaluate_data[3]

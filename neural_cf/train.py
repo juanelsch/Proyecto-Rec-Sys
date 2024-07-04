@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from gmf import GMFEngine
 from mlp import MLPEngine
+from kan_ import KANEngine
 from neumf import NeuMFEngine
 from data import SampleGenerator
 
@@ -46,6 +47,26 @@ mlp_config = {'alias': 'mlp_factor8neg4_bz256_166432168_pretrain_reg_0.0000001',
               'pretrain': False,
               'pretrain_mf': 'checkpoints/gmf/{}'.format('gmf_factor8neg4_Epoch100_HR0.6391_NDCG0.2852.model'),
               'model_dir': 'checkpoints/mlp/{}_Epoch{}_HR{:.4f}_NDCG{:.4f}.model'}
+
+kan_config = {'alias': 'kan_factor8neg4',
+             'num_epoch': 200,
+             'batch_size': 1024,
+             'optimizer': 'adam',
+             'adam_lr': 1e-3,
+             'num_users': 944,
+             'num_items': 1683,
+             'latent_dim': 8,
+             'num_negative': 4,
+             'layers': [16, 1, 1], # layers[0] is the concat of latent user vector & latent item vector
+             'l2_regularization': 0.0000001,
+             'grid': 4,
+             'k': 3,
+             'seed': 42,
+             'use_cuda': False,
+             'use_batchify': True,
+             'device_id': 0,
+             'pretrain': False,
+             'model_dir': 'checkpoints/kan/{}_Epoch{}_HR{:.4f}_NDCG{:.4f}.model'}
 
 neumf_config = {'alias': 'neumf_factor8neg4',
                 'num_epoch': 200,
@@ -108,8 +129,10 @@ evaluate_data = sample_generator.evaluate_data
 # engine = GMFEngine(config)
 # config = mlp_config
 # engine = MLPEngine(config)
-config = neumf_config
-engine = NeuMFEngine(config)
+# config = neumf_config
+# engine = NeuMFEngine(config)
+config = kan_config
+engine = KANEngine(config)
 for epoch in range(config['num_epoch']):
     print('Epoch {} starts !'.format(epoch))
     print('-' * 80)
