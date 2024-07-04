@@ -23,7 +23,7 @@ class KANMF(torch.nn.Module):
         kan_device = 'cuda' if config['use_cuda'] else 'cpu'
         self.act_fun = KANModel(config)
 
-        self.affine_output = KANLayer(in_features=config['layers'][-1] + config['latent_dim_mf'], out_features=1)
+        self.affine_output = torch.nn.Linear(in_features=config['layers'][-1] + config['latent_dim_mf'], out_features=1)
         self.logistic = torch.nn.Sigmoid()
 
         self._step = 0
