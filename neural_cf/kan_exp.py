@@ -5,7 +5,7 @@ from data import SampleGenerator
 
 config = {'alias': 'kan_test',
              'num_epoch': 50,
-             'batch_size': [256, 1024],
+             'batch_size': 1024,
              'optimizer': 'adam',
              'adam_lr': 1e-3,
              'num_users': 944,
@@ -39,25 +39,22 @@ print('Range of itemId is [{}, {}]'.format(ml100k_rating.itemId.min(), ml100k_ra
 sample_generator = SampleGenerator(ratings=ml100k_rating)
 evaluate_data = sample_generator.evaluate_data
 
-for bs in config['batch_size']:
-    print(f'Batch size: {bs} starts !')
+
+for l in config['layers']:
+    print(f'Layers: {l} starts !')
     print('-' * 80)
-    for l in config['layers']:
-        print(f'Layers: {l} starts !')
+    for g in config['grid']:
+        print(f'Grid: {g} starts !')
         print('-' * 80)
-        for g in config['grid']:
-            print(f'Grid: {g} starts !')
+        new_config = config.copy()
+        new_config['alias'] = f'{config["alias"]}__l{l}_g{g}'
+        new_config['layers'] = l
+        new_config['grid'] = g
+        engine = KANEngine(new_config)
+        for epoch in range(config['num_epoch']):
+            print('Epoch {} starts !'.format(epoch))
             print('-' * 80)
-            new_config = config.copy()
-            new_config['alias'] = f'{config["alias"]}_bs{bs}_l{l}_g{g}'
-            new_config['batch_size'] = bs
-            new_config['layers'] = l
-            new_config['grid'] = g
-            engine = KANEngine(new_config)
-            for epoch in range(config['num_epoch']):
-                print('Epoch {} starts !'.format(epoch))
-                print('-' * 80)
-                train_loader = sample_generator.instance_a_train_loader(config['num_negative'], bs)
-                engine.train_an_epoch(train_loader, epoch_id=epoch)
-                hit_ratio, ndcg = engine.evaluate(evaluate_data, epoch_id=epoch)
-                engine.save(f'{config["alias"]}_bs{bs}_l{l}_g{g}', epoch, hit_ratio, ndcg)
+            train_loader = sample_generator.instance_a_train_loader(config['num_negative'], config['batch_size'])
+            engine.train_an_epoch(train_loader, epoch_id=epoch)
+            hit_ratio, ndcg = engine.evaluate(evaluate_data, epoch_id=epoch)
+            engine.save(f'{config["alias"]}_l{l}_g{g}', epoch, hit_ratio, ndcg)

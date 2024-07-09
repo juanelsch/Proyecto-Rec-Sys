@@ -6,6 +6,7 @@ from kan_ import KANEngine
 from neumf import NeuMFEngine
 from kanmf import KANMFEngine
 from data import SampleGenerator
+import time
 
 gmf_config = {'alias': 'gmf_factor8neg4-implict',
               'num_epoch': 200,
@@ -30,16 +31,16 @@ gmf_config = {'alias': 'gmf_factor8neg4-implict',
               'device_id': 0,
               'model_dir': 'checkpoints/gmf/{}_Epoch{}_HR{:.4f}_NDCG{:.4f}.model'}
 
-mlp_config = {'alias': 'mlp_factor8neg4_bz256_166432168_pretrain_reg_0.0000001',
+mlp_config = {'alias': 'mlp_bs1024_16dim',
               'num_epoch': 200,
-              'batch_size': 256,  # 1024,
+              'batch_size': 1024,  # 256,
               'optimizer': 'adam',
               'adam_lr': 1e-3,
               'num_users': 944,
               'num_items': 1683,
-              'latent_dim': 8,
+              'latent_dim': 16,
               'num_negative': 4,
-              'layers': [16, 64, 32, 16, 8],  # layers[0] is the concat of latent user vector & latent item vector
+              'layers': [32, 64, 32, 16, 8],  # layers[0] is the concat of latent user vector & latent item vector
               'l2_regularization': 0.0000001,  # MLP model is sensitive to hyper params
               'weight_init_gaussian': True,
               'use_cuda': False,
@@ -49,7 +50,7 @@ mlp_config = {'alias': 'mlp_factor8neg4_bz256_166432168_pretrain_reg_0.0000001',
               'pretrain_mf': 'checkpoints/gmf/{}'.format('gmf_factor8neg4_Epoch100_HR0.6391_NDCG0.2852.model'),
               'model_dir': 'checkpoints/mlp/{}_Epoch{}_HR{:.4f}_NDCG{:.4f}.model'}
 
-kan_config = {'alias': 'kan_factor8neg4',
+kan_config = {'alias': 'kan_16dim',
              'num_epoch': 200,
              'batch_size': 1024,
              'optimizer': 'adam',
@@ -58,9 +59,9 @@ kan_config = {'alias': 'kan_factor8neg4',
              'num_items': 1683,
              'latent_dim': 8,
              'num_negative': 4,
-             'layers': [16, 1, 1], # layers[0] is the concat of latent user vector & latent item vector
+             'layers': [16, 2, 1], # layers[0] is the concat of latent user vector & latent item vector
              'l2_regularization': 0.0000001,
-             'grid': 4,
+             'grid': 3,
              'k': 3,
              'seed': 42,
              'use_cuda': False,
@@ -99,9 +100,9 @@ kanmf_config = {'alias': 'kanmf_factor8neg4',
                 'num_users': 944, # if ml-1m then 6040, if ml-100k then 944, if dataset idx starts at 1 then len(data) + 1
                 'num_items': 1683, # if ml-1m then 3706, if ml-100k then 1683, if dataset idx starts at 1 then len(data) + 1
                 'latent_dim_mf': 8,
-                'latent_dim_mlp': 8,
+                'latent_dim_kan': 8,
                 'num_negative': 4,
-                'layers': [16, 8],  # layers[0] is the concat of latent user vector & latent item vector, last layer implemented inside
+                'layers': [16, 8, 8],  # layers[0] is the concat of latent user vector & latent item vector, last layer implemented inside
                 'grid': 4,
                 'k': 3,
                 'seed': 42,
@@ -157,14 +158,20 @@ evaluate_data = sample_generator.evaluate_data
 # engine = MLPEngine(config)
 # config = neumf_config
 # engine = NeuMFEngine(config)
-# config = kan_config
-# engine = KANEngine(config)
-config = kanmf_config
-engine = KANMFEngine(config)
+config = kan_config
+engine = KANEngine(config)
+# config = kanmf_config
+# engine = KANMFEngine(config)
+time_factor = 1/config['num_epoch']
+time_epoch = 0
 for epoch in range(config['num_epoch']):
     print('Epoch {} starts !'.format(epoch))
     print('-' * 80)
+    start = time.time()
     train_loader = sample_generator.instance_a_train_loader(config['num_negative'], config['batch_size'])
     engine.train_an_epoch(train_loader, epoch_id=epoch)
     hit_ratio, ndcg = engine.evaluate(evaluate_data, epoch_id=epoch)
     engine.save(config['alias'], epoch, hit_ratio, ndcg)
+    time_epoch += round(round(time.time() - start, 2) * time_factor, 2)
+
+print(f'Average time per epoch: {time_epoch} seconds')
